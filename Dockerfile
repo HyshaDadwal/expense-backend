@@ -12,4 +12,4 @@ RUN chmod +x mvnw
 RUN ./mvnw clean install -DskipTests
 
 # Run the jar
-CMD ["java", "-jar", "target/*.jar"]
+CMD ["java", "-jar", "target/expense-intelligence-system-0.0.1-SNAPSHOT.jar"]

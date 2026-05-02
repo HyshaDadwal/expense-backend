@@ -15,9 +15,14 @@ public class UserService {
     private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     public User registerUser(User user) {
+
+        if (userRepository.findByEmail(user.getEmail()).isPresent()) {
+            throw new RuntimeException("Email already exists");
+        }
+
         String encodedPassword = passwordEncoder.encode(user.getPassword());
-        System.out.println("Encoded Password: " + encodedPassword);
         user.setPassword(encodedPassword);
+
         return userRepository.save(user);
     }
 

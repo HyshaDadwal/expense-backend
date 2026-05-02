@@ -4,14 +4,15 @@ import com.expense.app.util.JwtUtil;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
+
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
 
 @Component
@@ -29,6 +30,7 @@ public class JwtFilter implements Filter {
 
         String path = req.getRequestURI();
 
+        // Allow auth endpoints
         if (path.startsWith("/auth")) {
             chain.doFilter(request, response);
             return;
@@ -42,29 +44,28 @@ public class JwtFilter implements Filter {
             return;
         }
 
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            String token = authHeader.substring(7);
-            String email = jwtUtil.extractEmail(token);
-
-            UsernamePasswordAuthenticationToken authToken =
-                    new UsernamePasswordAuthenticationToken(email, null, new ArrayList<>());
-
-            SecurityContextHolder.getContext().setAuthentication(authToken);
-        }
-
         String token = authHeader.substring(7);
 
         try {
+            // Extract email
             String email = jwtUtil.extractEmail(token);
 
+            // Create authentication object
             UsernamePasswordAuthenticationToken auth =
-                    new UsernamePasswordAuthenticationToken(email, null, Collections.emptyList());
+                    new UsernamePasswordAuthenticationToken(
+                            email,
+                            null,
+                            Collections.singletonList(() -> "ROLE_USER") // 🔥 FIX
+                    );
 
+            auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(req));
+
+            // Set authentication
             SecurityContextHolder.getContext().setAuthentication(auth);
 
         } catch (Exception e) {
             res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            res.getWriter().write("Invalid token");
+            res.getWriter().write("Invalid or expired token");
             return;
         }
 
